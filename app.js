@@ -426,28 +426,28 @@ function initDiverExperience() {
   // ==========================================================================
   const WHALE_DEPTH_Y = -185;
   const whaleRoot = new THREE.Group();
-  whaleRoot.position.set(0, WHALE_DEPTH_Y, -8); // Positioned directly in front of the diver!
+  whaleRoot.position.set(0, WHALE_DEPTH_Y + 5, -34); // Centered directly in the observation reticle crosshairs!
   scene.add(whaleRoot);
 
-  // Dedicated High-Luminance Multi-Point Lighting Rig on the Whale
-  const whaleHeadLight = new THREE.PointLight(0x38bdf8, 7.5, 120, 1.2);
-  whaleHeadLight.position.set(22, 4, 0);
+  // Dedicated Balanced Multi-Point Lighting Rig on the Whale (aligned with 45° angle)
+  const whaleHeadLight = new THREE.PointLight(0x38bdf8, 2.5, 50, 1.2);
+  whaleHeadLight.position.set(7, 2, 6);
   whaleRoot.add(whaleHeadLight);
 
-  const whaleDorsalLight = new THREE.PointLight(0x00f5ff, 6.5, 110, 1.2);
-  whaleDorsalLight.position.set(0, 14, 0);
+  const whaleDorsalLight = new THREE.PointLight(0x00f5ff, 2.4, 45, 1.2);
+  whaleDorsalLight.position.set(0, 7, 0);
   whaleRoot.add(whaleDorsalLight);
 
-  const whaleBellyLight = new THREE.PointLight(0x2dd4bf, 7.0, 100, 1.2);
-  whaleBellyLight.position.set(0, -12, 0);
+  const whaleBellyLight = new THREE.PointLight(0x2dd4bf, 2.2, 40, 1.2);
+  whaleBellyLight.position.set(0, -6, 0);
   whaleRoot.add(whaleBellyLight);
 
-  const whaleTailLight = new THREE.PointLight(0x818cf8, 5.5, 90, 1.2);
-  whaleTailLight.position.set(-25, 2, 0);
+  const whaleTailLight = new THREE.PointLight(0x818cf8, 2.0, 38, 1.2);
+  whaleTailLight.position.set(-8, 1, -7);
   whaleRoot.add(whaleTailLight);
 
-  const whaleAbyssalFill = new THREE.PointLight(0x0284c7, 5.0, 200, 1.0);
-  whaleAbyssalFill.position.set(0, 0, 30);
+  const whaleAbyssalFill = new THREE.PointLight(0x0284c7, 1.6, 60, 1.0);
+  whaleAbyssalFill.position.set(5, 4, 12);
   whaleRoot.add(whaleAbyssalFill);
 
   // Whale Bioluminescent Aura (Abyssal Spirit Plankton)
@@ -545,6 +545,14 @@ function initDiverExperience() {
     },
     triggerSpiral() {
       state.whaleTargetRoll += Math.PI * 2;
+      if (whaleKinematics && whaleKinematics.attackAction) {
+        whaleKinematics.attackAction.reset().fadeIn(0.15).play();
+        setTimeout(() => {
+          if (whaleKinematics && whaleKinematics.attackAction) {
+            whaleKinematics.attackAction.fadeOut(0.35);
+          }
+        }, 1100);
+      }
       playWhaleSound(340, 160, 1.4);
     },
     triggerSonar() {
@@ -561,6 +569,9 @@ function initDiverExperience() {
       state.whaleSwimCadence = state.whaleSwimCadence > 0.6 ? 0.42 : 0.85;
       const cadenceEl = document.getElementById('hud-whale-cadence');
       if (cadenceEl) cadenceEl.innerText = `${state.whaleSwimCadence.toFixed(2)} HZ`;
+      if (whaleKinematics && whaleKinematics.swimAction) {
+        whaleKinematics.swimAction.timeScale = state.whaleSwimCadence > 0.6 ? 1.05 : 0.55;
+      }
     },
     focusWhale() {
       const whaleStageEl = document.getElementById('whale-stage') || document.getElementById('abyss');
@@ -790,6 +801,8 @@ function initDiverExperience() {
     requestAnimationFrame(animate);
 
     const elapsedTime = state.clock.getElapsedTime();
+    const delta = Math.min(elapsedTime - (state.lastElapsedTime || elapsedTime), 0.1);
+    state.lastElapsedTime = elapsedTime;
     const p = state.scrollProgress;
 
     // Submersion boundary crossing detection
@@ -945,10 +958,10 @@ function initDiverExperience() {
     });
 
     // 6. Whale 3D Active Patrol Movement & Kinematics
-    whaleRoot.position.x = Math.sin(elapsedTime * 0.22) * 9;
-    whaleRoot.position.y = WHALE_DEPTH_Y + Math.cos(elapsedTime * 0.20) * 3.0;
-    whaleRoot.position.z = -8 + Math.sin(elapsedTime * 0.15) * 5;
-    whaleRoot.rotation.y = Math.PI / 2 + Math.cos(elapsedTime * 0.22) * 0.28;
+    whaleRoot.position.x = Math.sin(elapsedTime * 0.16) * 4.5;
+    whaleRoot.position.y = (WHALE_DEPTH_Y + 5) + Math.cos(elapsedTime * 0.15) * 1.6;
+    whaleRoot.position.z = -34 + Math.sin(elapsedTime * 0.12) * 2.0;
+    whaleRoot.rotation.y = Math.sin(elapsedTime * 0.14) * 0.08;
 
     // Orbiting Whale Bioluminescent Aura
     if (whaleAura) {
@@ -963,7 +976,7 @@ function initDiverExperience() {
       auraGeo.attributes.position.needsUpdate = true;
     }
 
-    animate3DWhale(whaleKinematics, whaleRoot, elapsedTime, state);
+    animate3DWhale(whaleKinematics, whaleRoot, elapsedTime, state, delta);
 
     // 7. Sonar Wave
     if (state.sonarExpanding) {
@@ -1011,6 +1024,10 @@ function create3DWhale(root) {
   whaleGroup.scale.set(1.9, 1.9, 1.9);
   root.add(whaleGroup);
 
+  // Procedural container (acts as immediate fallback / placeholder)
+  const proceduralWhaleGroup = new THREE.Group();
+  whaleGroup.add(proceduralWhaleGroup);
+
   // Radiant Bioluminescent Materials
   const whaleSkinMat = new THREE.MeshStandardMaterial({
     color: 0x1d4ed8, // Vibrant deep royal azure
@@ -1048,14 +1065,14 @@ function create3DWhale(root) {
   const bodyGeo = new THREE.CylinderGeometry(5.2, 6.8, 22, 28);
   bodyGeo.rotateZ(Math.PI / 2);
   const bodyMesh = new THREE.Mesh(bodyGeo, whaleSkinMat);
-  whaleGroup.add(bodyMesh);
+  proceduralWhaleGroup.add(bodyMesh);
 
   // 2. Head / Brow (Streamlined Rostrum)
   const headGeo = new THREE.ConeGeometry(5.8, 16, 28);
   headGeo.rotateZ(-Math.PI / 2);
   const headMesh = new THREE.Mesh(headGeo, whaleSkinMat);
   headMesh.position.set(18, -0.3, 0);
-  whaleGroup.add(headMesh);
+  proceduralWhaleGroup.add(headMesh);
 
   // 3. Ventral Pleats (Underbelly throat grooves)
   const ventralGeo = new THREE.CylinderGeometry(4.8, 6.2, 18, 20, 1, false, 0, Math.PI);
@@ -1063,7 +1080,7 @@ function create3DWhale(root) {
   ventralGeo.rotateX(Math.PI);
   const ventralMesh = new THREE.Mesh(ventralGeo, ventralMat);
   ventralMesh.position.set(2, -2.0, 0);
-  whaleGroup.add(ventralMesh);
+  proceduralWhaleGroup.add(ventralMesh);
 
   // Ventral Glowing Rib Arcs
   for (let v = 0; v < 6; v++) {
@@ -1072,27 +1089,27 @@ function create3DWhale(root) {
     vRibGeo.rotateY(Math.PI / 2);
     const vRibMesh = new THREE.Mesh(vRibGeo, edgeGlowMat);
     vRibMesh.position.set(8 - v * 2.8, -1.9, 0);
-    whaleGroup.add(vRibMesh);
+    proceduralWhaleGroup.add(vRibMesh);
   }
 
   // 4. Bioluminescent Glowing Eyes
   const eyeGeo = new THREE.SphereGeometry(1.2, 20, 20);
   const eyeL = new THREE.Mesh(eyeGeo, eyeGlowMat);
   eyeL.position.set(17, 1.1, 4.8);
-  whaleGroup.add(eyeL);
+  proceduralWhaleGroup.add(eyeL);
 
   const eyeR = new THREE.Mesh(eyeGeo, eyeGlowMat);
   eyeR.position.set(17, 1.1, -4.8);
-  whaleGroup.add(eyeR);
+  proceduralWhaleGroup.add(eyeR);
 
   // Eye Point Lights
   const eyeLightL = new THREE.PointLight(0x38bdf8, 3.5, 30);
   eyeLightL.position.set(17, 1.1, 5.5);
-  whaleGroup.add(eyeLightL);
+  proceduralWhaleGroup.add(eyeLightL);
 
   const eyeLightR = new THREE.PointLight(0x38bdf8, 3.5, 30);
   eyeLightR.position.set(17, 1.1, -5.5);
-  whaleGroup.add(eyeLightR);
+  proceduralWhaleGroup.add(eyeLightR);
 
   // 5. Pectoral Fins (Left & Right Flippers with glowing leading edges)
   const finGeo = new THREE.BoxGeometry(18, 0.7, 4.5);
@@ -1107,7 +1124,7 @@ function create3DWhale(root) {
   const finEdgeL = new THREE.Mesh(new THREE.BoxGeometry(18.2, 0.9, 0.8), edgeGlowMat);
   finEdgeL.position.set(-9, 0, 2.3);
   finLeftPivot.add(finEdgeL);
-  whaleGroup.add(finLeftPivot);
+  proceduralWhaleGroup.add(finLeftPivot);
 
   const finRightPivot = new THREE.Group();
   finRightPivot.position.set(7, -2.2, -5.8);
@@ -1118,25 +1135,25 @@ function create3DWhale(root) {
   const finEdgeR = new THREE.Mesh(new THREE.BoxGeometry(18.2, 0.9, 0.8), edgeGlowMat);
   finEdgeR.position.set(-9, 0, -2.3);
   finRightPivot.add(finEdgeR);
-  whaleGroup.add(finRightPivot);
+  proceduralWhaleGroup.add(finRightPivot);
 
   // 6. Dorsal Fin with Glowing Ridge
   const dorsalGeo = new THREE.ConeGeometry(2.8, 5.5, 14);
   dorsalGeo.rotateZ(-(Math.PI / 180) * 35);
   const dorsalMesh = new THREE.Mesh(dorsalGeo, whaleSkinMat);
   dorsalMesh.position.set(-6, 6.2, 0);
-  whaleGroup.add(dorsalMesh);
+  proceduralWhaleGroup.add(dorsalMesh);
 
   const dorsalTrimGeo = new THREE.BoxGeometry(1.0, 5.6, 0.7);
   dorsalTrimGeo.rotateZ(-(Math.PI / 180) * 35);
   const dorsalTrim = new THREE.Mesh(dorsalTrimGeo, edgeGlowMat);
   dorsalTrim.position.set(-5.6, 6.2, 0);
-  whaleGroup.add(dorsalTrim);
+  proceduralWhaleGroup.add(dorsalTrim);
 
   // 7. Articulated Tail Peduncle & Fluke
   const tailJoint1 = new THREE.Group();
   tailJoint1.position.set(-11, 0, 0);
-  whaleGroup.add(tailJoint1);
+  proceduralWhaleGroup.add(tailJoint1);
 
   const tailSeg1Geo = new THREE.CylinderGeometry(3.8, 5.2, 11, 18);
   tailSeg1Geo.rotateZ(Math.PI / 2);
@@ -1195,43 +1212,136 @@ function create3DWhale(root) {
 
   whaleGroup.add(runeGroup);
 
-  return {
+  const whaleKinematicsObj = {
     group: whaleGroup,
+    proceduralGroup: proceduralWhaleGroup,
     finLeft: finLeftPivot,
     finRight: finRightPivot,
     tailJoint1: tailJoint1,
     tailJoint2: tailJoint2,
     runes: runeSpheres,
-    eyes: [eyeL, eyeR]
+    eyes: [eyeL, eyeR],
+    mixer: null,
+    swimAction: null,
+    attackAction: null,
+    isGLBLoaded: false
   };
+
+  // 9. Load High-Poly Authentic 3D Whale GLTF Model
+  if (typeof THREE.GLTFLoader !== 'undefined') {
+    const gltfLoader = new THREE.GLTFLoader();
+    gltfLoader.load('whale.glb', (gltf) => {
+      const whaleModel = gltf.scene;
+
+      // Auto-center model at local origin
+      const box = new THREE.Box3().setFromObject(whaleModel);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      whaleModel.position.sub(center);
+
+      // Re-orient model horizontally so it swims in natural posture
+      whaleModel.rotation.x = Math.PI / 2;
+
+      // Wrap model to apply orientation and scaling
+      const modelWrapper = new THREE.Group();
+      modelWrapper.add(whaleModel);
+      // Turn 45 degrees to the right, facing towards the viewer
+      modelWrapper.rotation.y = Math.PI / 4;
+      // Scale for majestic framing across the observation reticle
+      modelWrapper.scale.set(0.65, 0.65, 0.65);
+
+      // Apply custom deep-sea bioluminescent PBR shader
+      const leviathanSkinMat = new THREE.MeshStandardMaterial({
+        color: 0x0c274c,          // Deep oceanic royal azure / obsidian skin
+        emissive: 0x0284c7,       // Luminous deep-sea cyan glow
+        emissiveIntensity: 0.32,  // Elegant bioluminescent glow
+        roughness: 0.22,          // Wet, sleek oceanic hide
+        metalness: 0.40,          // Glossy reflective sheen catching deep lights
+        flatShading: false
+      });
+
+      whaleModel.traverse((child) => {
+        if (child.isMesh) {
+          child.material = leviathanSkinMat;
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+
+      // Setup Skeletal Swim Kinematics & Animation Mixer
+      if (gltf.animations && gltf.animations.length) {
+        const mixer = new THREE.AnimationMixer(whaleModel);
+        const swimClip = gltf.animations.find(a => a.name.toLowerCase() === 'swim') || gltf.animations[0];
+        const swimAction = mixer.clipAction(swimClip);
+        swimAction.timeScale = 0.55; // Majestic, heavy colossal cadence
+        swimAction.play();
+
+        whaleKinematicsObj.mixer = mixer;
+        whaleKinematicsObj.swimAction = swimAction;
+
+        const attackClip = gltf.animations.find(a => a.name.toLowerCase() === 'attack');
+        if (attackClip) {
+          whaleKinematicsObj.attackAction = mixer.clipAction(attackClip);
+        }
+      }
+
+      // Smoothly hide the procedural blocks and mount the realistic 3D model
+      proceduralWhaleGroup.visible = false;
+      whaleGroup.add(modelWrapper);
+      whaleKinematicsObj.isGLBLoaded = true;
+      console.log('Abyssal Leviathan 3D Model active with skeletal swim kinematics!');
+    }, undefined, (err) => {
+      console.warn('Fallback to procedural whale model:', err);
+    });
+  }
+
+  return whaleKinematicsObj;
 }
 
 /* ==========================================================================
    ANIMATE 3D WHALE KINEMATICS
    ========================================================================== */
-function animate3DWhale(k, root, time, state) {
+function animate3DWhale(k, root, time, state, delta) {
+  // 1. Update skeletal animation mixer
+  if (k.mixer && delta) {
+    k.mixer.update(delta);
+  }
+
   const cadence = state.whaleSwimCadence;
-  const cycle = time * cadence * Math.PI * 2;
 
-  const tailAngle1 = Math.sin(cycle) * 0.22;
-  const tailAngle2 = Math.sin(cycle - 0.9) * 0.32;
+  // 2. If GLB model not loaded yet, use procedural joint undulation
+  if (!k.isGLBLoaded) {
+    const cycle = time * cadence * Math.PI * 2;
+    const tailAngle1 = Math.sin(cycle) * 0.22;
+    const tailAngle2 = Math.sin(cycle - 0.9) * 0.32;
 
-  k.tailJoint1.rotation.y = tailAngle1;
-  k.tailJoint2.rotation.y = tailAngle2;
+    if (k.tailJoint1) k.tailJoint1.rotation.y = tailAngle1;
+    if (k.tailJoint2) k.tailJoint2.rotation.y = tailAngle2;
 
-  k.tailJoint1.rotation.z = Math.cos(cycle) * 0.08;
-  k.tailJoint2.rotation.z = Math.cos(cycle - 0.7) * 0.12;
+    if (k.tailJoint1) k.tailJoint1.rotation.z = Math.cos(cycle) * 0.08;
+    if (k.tailJoint2) k.tailJoint2.rotation.z = Math.cos(cycle - 0.7) * 0.12;
 
-  k.finLeft.rotation.z = -(Math.PI / 180) * 15 + Math.sin(cycle * 0.8) * 0.22;
-  k.finRight.rotation.z = -(Math.PI / 180) * 15 - Math.sin(cycle * 0.8) * 0.22;
+    if (k.finLeft) k.finLeft.rotation.z = -(Math.PI / 180) * 15 + Math.sin(cycle * 0.8) * 0.22;
+    if (k.finRight) k.finRight.rotation.z = -(Math.PI / 180) * 15 - Math.sin(cycle * 0.8) * 0.22;
+  }
 
+  // 3. Sync animation cadence
+  if (k.swimAction) {
+    const targetTimeScale = state.whaleSwimCadence > 0.6 ? 1.05 : 0.55;
+    k.swimAction.timeScale = THREE.MathUtils.lerp(k.swimAction.timeScale, targetTimeScale, 0.08);
+  }
+
+  // 4. Spiral roll maneuver
   state.whaleRoll += (state.whaleTargetRoll - state.whaleRoll) * 0.05;
   k.group.rotation.x = state.whaleRoll;
 
-  k.runes.forEach((rune, idx) => {
-    const pulse = Math.sin(time * 3.5 + idx * 0.4) * 0.45 + 0.95;
-    rune.scale.setScalar(pulse);
-  });
+  // 5. Pulse bioluminescent rune constellations
+  if (k.runes) {
+    k.runes.forEach((rune, idx) => {
+      const pulse = Math.sin(time * 3.5 + idx * 0.4) * 0.45 + 0.95;
+      rune.scale.setScalar(pulse);
+    });
+  }
 }
 
 /* ==========================================================================
