@@ -50,7 +50,7 @@ function initDiverExperience() {
   // Fog setup (Warm golden-hour horizon above water)
   const initialFogColor = new THREE.Color(0xb45309); // 17:00 Warm Golden Sunset
   scene.fog = new THREE.FogExp2(initialFogColor, 0.0012); // Clear and open horizon!
-  scene.background = new THREE.Color(0x1a0626); // Deep evening twilight
+  scene.background = new THREE.Color(0xb45309); // Radiant 17:00 Golden Hour Amber
 
   // --- FIRST-PERSON DIVER CAMERA RIG ---
   const diverRig = new THREE.Group();
@@ -104,7 +104,7 @@ function initDiverExperience() {
   // ==========================================================================
   const sunGroup = new THREE.Group();
   // Elevated high in the sky so it shines majestically above the hero text without obstruction
-  sunGroup.position.set(0, 50, -135);
+  sunGroup.position.set(0, 68, -130);
 
   // Core Solar Disk (Brilliant Golden-White)
   const sunGeo = new THREE.SphereGeometry(22, 32, 32);
@@ -181,23 +181,24 @@ function initDiverExperience() {
   const sunsetCanvas = document.createElement('canvas');
   sunsetCanvas.width = 16;
   sunsetCanvas.height = 512;
-  const sCtx = sunsetCanvas.getContext('2d');
-  const sGrad = sCtx.createLinearGradient(0, 0, 0, 512);
-  sGrad.addColorStop(0, '#150624');   // Deep twilight zenith
-  sGrad.addColorStop(0.20, '#310c3b'); // Amethyst violet
-  sGrad.addColorStop(0.42, '#701944'); // Sunset rose
-  sGrad.addColorStop(0.65, '#c2410c'); // Radiant amber
-  sGrad.addColorStop(0.82, '#ea580c'); // Warm sunfall crimson
-  sGrad.addColorStop(0.94, '#f59e0b'); // Golden horizon
-  sGrad.addColorStop(1.0, '#fef08a');  // Blazing sun horizon
-  sCtx.fillStyle = sGrad;
-  sCtx.fillRect(0, 0, 16, 512);
+  const domeCtx = sunsetCanvas.getContext('2d');
+  const domeGrad = domeCtx.createLinearGradient(0, 0, 0, 512);
+  domeGrad.addColorStop(0, '#150624');   // Deep twilight zenith
+  domeGrad.addColorStop(0.20, '#310c3b'); // Amethyst violet
+  domeGrad.addColorStop(0.42, '#701944'); // Sunset rose
+  domeGrad.addColorStop(0.65, '#c2410c'); // Radiant amber
+  domeGrad.addColorStop(0.82, '#ea580c'); // Warm sunfall crimson
+  domeGrad.addColorStop(0.94, '#f59e0b'); // Golden horizon
+  domeGrad.addColorStop(1.0, '#fef08a');  // Blazing sun horizon
+  domeCtx.fillStyle = domeGrad;
+  domeCtx.fillRect(0, 0, 16, 512);
   const skyDomeTex = new THREE.CanvasTexture(sunsetCanvas);
 
   const skyDomeMat = new THREE.MeshBasicMaterial({
     map: skyDomeTex,
     side: THREE.BackSide,
-    depthWrite: false
+    depthWrite: false,
+    fog: false
   });
   const skyDome = new THREE.Mesh(skyDomeGeo, skyDomeMat);
   skyDome.position.set(0, 0, 0);
@@ -1257,7 +1258,7 @@ function interpolateFogAndLighting(p, fog, ambientLight, sunLight, underwaterPoi
     if (underwaterPointLight) underwaterPointLight.intensity = f * 2.2;
     if (sunGroup) {
       sunGroup.visible = true;
-      sunGroup.position.y = 50 - f * 16; // Poetic sunfall sinking towards horizon before diving
+      sunGroup.position.y = 68 - f * 20; // Poetic sunfall sinking towards horizon before diving
     }
     if (skyDome) skyDome.visible = true;
   } else if (p < 0.38) {
@@ -1292,11 +1293,7 @@ function interpolateFogAndLighting(p, fog, ambientLight, sunLight, underwaterPoi
 
   fog.color.copy(currentColor);
   if (scene && scene.background) {
-    if (p < 0.18) {
-      scene.background.setHex(0x150624);
-    } else {
-      scene.background.copy(currentColor);
-    }
+    scene.background.copy(currentColor);
   }
 }
 
