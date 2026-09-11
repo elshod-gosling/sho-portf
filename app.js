@@ -47,14 +47,14 @@ function initDiverExperience() {
   document.body.classList.add('on-surface');
   document.body.classList.remove('submerged');
 
-  // Fog setup (Crisp, warm atmospheric sunset sky above water)
-  const initialFogColor = new THREE.Color(0x280a32); // 17:00 Sunset twilight
-  scene.fog = new THREE.FogExp2(initialFogColor, 0.0014); // Clear and open horizon!
-  scene.background = initialFogColor.clone();
+  // Fog setup (Warm golden-hour horizon above water)
+  const initialFogColor = new THREE.Color(0xb45309); // 17:00 Warm Golden Sunset
+  scene.fog = new THREE.FogExp2(initialFogColor, 0.0012); // Clear and open horizon!
+  scene.background = new THREE.Color(0x1a0626); // Deep evening twilight
 
   // --- FIRST-PERSON DIVER CAMERA RIG ---
   const diverRig = new THREE.Group();
-  diverRig.position.set(0, 4.5, 52); // Starting at surface golden sunset height
+  diverRig.position.set(0, 6.5, 52); // Standing firmly on the surface (+6.5m above water)
   scene.add(diverRig);
 
   const camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 1500);
@@ -174,8 +174,35 @@ function initDiverExperience() {
   scene.add(sunGroup);
 
   // ==========================================================================
-  // B. 3D DYNAMIC OCEAN WATER SURFACE (Y = 0)
+  // B. VINLAND SAGA 17:00 SUNSET SKY DOME & 3D OCEAN SURFACE (Y = 0)
   // ==========================================================================
+  // Panoramic Anime Sunset Sky Dome
+  const skyDomeGeo = new THREE.SphereGeometry(260, 32, 24, 0, Math.PI * 2, 0, Math.PI * 0.5);
+  const sunsetCanvas = document.createElement('canvas');
+  sunsetCanvas.width = 16;
+  sunsetCanvas.height = 512;
+  const sCtx = sunsetCanvas.getContext('2d');
+  const sGrad = sCtx.createLinearGradient(0, 0, 0, 512);
+  sGrad.addColorStop(0, '#150624');   // Deep twilight zenith
+  sGrad.addColorStop(0.20, '#310c3b'); // Amethyst violet
+  sGrad.addColorStop(0.42, '#701944'); // Sunset rose
+  sGrad.addColorStop(0.65, '#c2410c'); // Radiant amber
+  sGrad.addColorStop(0.82, '#ea580c'); // Warm sunfall crimson
+  sGrad.addColorStop(0.94, '#f59e0b'); // Golden horizon
+  sGrad.addColorStop(1.0, '#fef08a');  // Blazing sun horizon
+  sCtx.fillStyle = sGrad;
+  sCtx.fillRect(0, 0, 16, 512);
+  const skyDomeTex = new THREE.CanvasTexture(sunsetCanvas);
+
+  const skyDomeMat = new THREE.MeshBasicMaterial({
+    map: skyDomeTex,
+    side: THREE.BackSide,
+    depthWrite: false
+  });
+  const skyDome = new THREE.Mesh(skyDomeGeo, skyDomeMat);
+  skyDome.position.set(0, 0, 0);
+  scene.add(skyDome);
+
   const waterWidth = 340;
   const waterSegments = 64;
   const waterGeo = new THREE.PlaneGeometry(waterWidth, waterWidth, waterSegments, waterSegments);
@@ -188,13 +215,13 @@ function initDiverExperience() {
   }
 
   const waterMat = new THREE.MeshStandardMaterial({
-    color: 0x0284c7,
-    roughness: 0.16,
-    metalness: 0.55,
+    color: 0x071e3d, // Deep twilight ocean reflecting the evening sky
+    roughness: 0.12,
+    metalness: 0.75,
     transparent: true,
-    opacity: 0.72,
+    opacity: 0.88,
     flatShading: true,
-    side: THREE.DoubleSide
+    side: THREE.FrontSide // Front side only so from surface it reflects, not a see-through glass box
   });
   const waterMesh = new THREE.Mesh(waterGeo, waterMat);
   waterMesh.position.y = 0;
@@ -590,17 +617,44 @@ function initDiverExperience() {
 
   // Section-based curved 3D flight calculator:
   function calculateSectionTarget() {
+    const scrollY = window.scrollY || window.pageYOffset;
+    const eduEl = document.getElementById('education');
+    const heroEl = document.getElementById('hero');
+
+    const eduTop = eduEl ? eduEl.offsetTop : window.innerHeight * 1.1;
+    // Surface realm: strictly hold diver firmly above water (+6.5m in open air) while on Hero!
+    const diveThreshold = eduTop * 0.48;
+
+    // 1. Strictly hold diver on the surface (+6.5m in open air) while in Hero:
+    if (scrollY < diveThreshold) {
+      return { x: 0, y: 6.5, z: 52, pitch: -0.02, yaw: 0, roll: 0 };
+    }
+
+    // 2. Diving plunge from diveThreshold to eduTop: swoops forward through water plane (Y = 0)
+    if (scrollY < eduTop) {
+      const frac = (scrollY - diveThreshold) / Math.max(eduTop - diveThreshold, 1);
+      const ease = frac * frac * (3 - 2 * frac);
+      return {
+        x: THREE.MathUtils.lerp(0, 10, ease),
+        y: THREE.MathUtils.lerp(6.5, -45, ease), // Smoothly dives through water surface (Y = 0)
+        z: THREE.MathUtils.lerp(52, 34, ease),
+        pitch: THREE.MathUtils.lerp(-0.02, -0.25, ease),
+        yaw: THREE.MathUtils.lerp(0, -0.16, ease),
+        roll: THREE.MathUtils.lerp(0, -0.08, ease)
+      };
+    }
+
+    // 3. Submerged zones:
     const sections = [
-      { id: 'hero', x: 0, y: 4.5, z: 52, pitch: -0.04, yaw: 0, roll: 0 },
       { id: 'education', x: 10, y: -45, z: 34, pitch: -0.25, yaw: -0.16, roll: -0.08 },
       { id: 'experience', x: -14, y: -92, z: 26, pitch: -0.20, yaw: 0.20, roll: 0.10 },
       { id: 'leadership', x: 8, y: -138, z: 22, pitch: -0.14, yaw: -0.12, roll: -0.05 },
-      { id: 'whale-stage', x: 0, y: WHALE_DEPTH_Y, z: 22, pitch: 0.02, yaw: 0, roll: 0 }, // Face-to-face with Leviathan!
+      { id: 'whale-stage', x: 0, y: WHALE_DEPTH_Y, z: 22, pitch: 0.02, yaw: 0, roll: 0 },
       { id: 'abyss', x: 0, y: WHALE_DEPTH_Y, z: 22, pitch: 0.02, yaw: 0, roll: 0 },
       { id: 'contact', x: -4, y: -205, z: 28, pitch: 0.08, yaw: 0.04, roll: 0.02 }
     ];
 
-    const scrollMid = (window.scrollY || window.pageYOffset) + window.innerHeight * 0.45;
+    const scrollMid = scrollY + window.innerHeight * 0.45;
 
     for (let i = 0; i < sections.length - 1; i++) {
       const el1 = document.getElementById(sections[i].id);
@@ -622,11 +676,6 @@ function initDiverExperience() {
           roll: THREE.MathUtils.lerp(sections[i].roll, sections[i + 1].roll, frac)
         };
       }
-    }
-
-    const firstEl = document.getElementById('education');
-    if (firstEl && scrollMid < firstEl.offsetTop) {
-      return { x: 0, y: 4.5, z: 52, pitch: -0.04, yaw: 0, roll: 0 };
     }
 
     // Default at bottom: directly face-to-face with the whale!
@@ -653,7 +702,7 @@ function initDiverExperience() {
     state.dragYawTarget *= 0.992;
 
     // Dynamic Fog & Lighting
-    interpolateFogAndLighting(p, scene.fog, ambientLight, sunDirLight, underwaterPointLight, scene, sunGroup);
+    interpolateFogAndLighting(p, scene.fog, ambientLight, sunDirLight, underwaterPointLight, scene, sunGroup, skyDome);
 
     // Update Visor O2 meter
     const o2El = document.getElementById('diver-o2');
@@ -810,6 +859,10 @@ function initDiverExperience() {
     // 0. Slow Golden Sunburst Rays Rotation (Sky Realm)
     if (sunRaysGroup) {
       sunRaysGroup.rotation.z = elapsedTime * 0.035;
+    }
+    if (skyDome) {
+      skyDome.position.x = diverRig.position.x;
+      skyDome.position.z = diverRig.position.z;
     }
 
     // 2. 3D Wave Surface Undulation
@@ -1183,10 +1236,10 @@ function animate3DWhale(k, root, time, state) {
 /* ==========================================================================
    INTERPOLATE FOG & LIGHTING WITH SCROLL DEPTH
    ========================================================================== */
-function interpolateFogAndLighting(p, fog, ambientLight, sunLight, underwaterPointLight, scene, sunGroup) {
+function interpolateFogAndLighting(p, fog, ambientLight, sunLight, underwaterPointLight, scene, sunGroup, skyDome) {
   if (!fog) return;
 
-  const cSunset = new THREE.Color(0x280a32);   // Poetic Vinland sunset twilight
+  const cSunset = new THREE.Color(0xb45309);   // Warm golden amber 17:00 sunset horizon
   const cShallows = new THREE.Color(0x0284c7); // Epipelagic azure
   const cTwilight = new THREE.Color(0x0c4a6e); // Mesopelagic indigo
   const cMidnight = new THREE.Color(0x021729); // Bathypelagic deep navy
@@ -1197,15 +1250,16 @@ function interpolateFogAndLighting(p, fog, ambientLight, sunLight, underwaterPoi
   if (p < 0.18) {
     const f = p / 0.18;
     currentColor.copy(cSunset).lerp(cShallows, f);
-    fog.density = 0.0014 + f * 0.0042; // Clear sky (0.0014) smoothly becoming ocean depth (0.0056)
+    fog.density = 0.0009 + f * 0.0047; // Clear open sky horizon smoothly becoming ocean depth
     ambientLight.color.setHex(0xffecd2);
-    ambientLight.intensity = 1.4 - f * 0.6; // Radiant golden hour
-    sunLight.intensity = 3.4 * (1 - f);
+    ambientLight.intensity = 1.6 - f * 0.8; // Radiant golden hour
+    sunLight.intensity = 3.6 * (1 - f);
     if (underwaterPointLight) underwaterPointLight.intensity = f * 2.2;
     if (sunGroup) {
       sunGroup.visible = true;
       sunGroup.position.y = 50 - f * 16; // Poetic sunfall sinking towards horizon before diving
     }
+    if (skyDome) skyDome.visible = true;
   } else if (p < 0.38) {
     const f = (p - 0.18) / 0.20;
     currentColor.copy(cShallows).lerp(cTwilight, f);
@@ -1215,6 +1269,7 @@ function interpolateFogAndLighting(p, fog, ambientLight, sunLight, underwaterPoi
     sunLight.intensity = 0;
     if (underwaterPointLight) underwaterPointLight.intensity = 2.2;
     if (sunGroup) sunGroup.visible = false;
+    if (skyDome) skyDome.visible = false;
   } else if (p < 0.60) {
     const f = (p - 0.38) / 0.22;
     currentColor.copy(cTwilight).lerp(cMidnight, f);
@@ -1223,6 +1278,7 @@ function interpolateFogAndLighting(p, fog, ambientLight, sunLight, underwaterPoi
     ambientLight.intensity = 0.45 - f * 0.15;
     if (underwaterPointLight) underwaterPointLight.intensity = 1.8;
     if (sunGroup) sunGroup.visible = false;
+    if (skyDome) skyDome.visible = false;
   } else {
     const f = Math.min((p - 0.60) / 0.40, 1);
     currentColor.copy(cMidnight).lerp(cAbyss, f);
@@ -1231,11 +1287,16 @@ function interpolateFogAndLighting(p, fog, ambientLight, sunLight, underwaterPoi
     ambientLight.intensity = 1.3; // Generous luminous ambient light
     if (underwaterPointLight) underwaterPointLight.intensity = 2.8;
     if (sunGroup) sunGroup.visible = false;
+    if (skyDome) skyDome.visible = false;
   }
 
   fog.color.copy(currentColor);
   if (scene && scene.background) {
-    scene.background.copy(currentColor);
+    if (p < 0.18) {
+      scene.background.setHex(0x150624);
+    } else {
+      scene.background.copy(currentColor);
+    }
   }
 }
 
