@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ergasheva Shohinur | Sunfall to the Abyssal Leviathan</title>
+  <meta name="description" content="Immersive portfolio of Ergasheva Shohinur — Scholar, Tournament Founder, and Community Leader. A journey from 17:00 golden sunset to the deep oceanic abyss.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Outfit:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome / Icons via CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Three.js 3D WebGL Engine via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body class="ocean-theme on-surface">
+
+  <!-- Background Continuous 3D WebGL Canvas (Three.js Scene) -->
+  <canvas id="webgl-canvas" class="webgl-canvas"></canvas>
+
+  <!-- First-Person Diver Mask & Tactical Visor Overlay -->
+  <div id="diver-mask" class="diver-mask-overlay">
+    <div class="visor-vignette"></div>
+    <div class="visor-glass-sheen"></div>
+    <div class="visor-rim-frame"></div>
+    <div id="visor-splash" class="visor-splash-layer"></div>
+    
+    <!-- Visor Telemetry Micro-HUD -->
+    <div class="visor-hud-container">
+      <div class="visor-hud-left">
+        <span class="hud-pill"><i class="fa-solid fa-head-side-mask"></i> DIVER POV</span>
+        <span class="hud-pill" id="diver-o2"><i class="fa-solid fa-lungs"></i> O₂: 98%</span>
+        <span class="hud-pill" id="diver-heading"><i class="fa-solid fa-compass"></i> HDG: 184° S</span>
+        <span class="hud-pill control-hint" id="hud-drag-hint"><i class="fa-solid fa-arrows-up-down-left-right"></i> DRAG TO LOOK</span>
+      </div>
+      <div class="visor-hud-right">
+        <button id="recenter-btn" class="hud-pill action-pill" title="Recenter View Ahead">
+          <i class="fa-solid fa-crosshairs"></i> <span>RECENTER</span>
+        </button>
+        <button id="torch-toggle" class="hud-pill torch-btn" title="Toggle 3D Dive Torch Light">
+          <i class="fa-solid fa-lightbulb"></i> <span>TORCH: ON</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#hero" class="brand-logo">
+        <span class="logo-symbol">◈</span>
+        <span class="logo-text">SHOHINUR<span class="accent-dot">.</span></span>
+      </a>
+
+      <!-- Quick Nav Links -->
+      <nav class="nav-links">
+        <a href="#hero" class="nav-link active" data-zone="sky"><i class="fa-solid fa-sun"></i> 17:00 Sunfall</a>
+        <a href="#education" class="nav-link" data-zone="shallows"><i class="fa-solid fa-water"></i> Shallows (-150m)</a>
+        <a href="#experience" class="nav-link" data-zone="twilight"><i class="fa-solid fa-compass-drafting"></i> Operations (-600m)</a>
+        <a href="#leadership" class="nav-link" data-zone="midnight"><i class="fa-solid fa-chess-queen"></i> Arenas (-2,500m)</a>
+        <a href="#abyss" class="nav-link whale-jump-link" data-zone="abyss"><i class="fa-solid fa-fish-fins"></i> 🐋 The Leviathan (-8,000m)</a>
+      </nav>
+
+      <!-- Utility Actions (Audio Toggle, Contact & Emergency Ascent) -->
+      <div class="nav-actions">
+        <!-- Ambient Sound Synthesizer Toggle -->
+        <button id="audio-toggle" class="audio-btn" title="Toggle Atmospheric Ocean Audio" aria-label="Toggle Ocean Audio">
+          <span class="sound-wave">
+            <span></span><span></span><span></span><span></span>
+          </span>
+          <span class="audio-label">ATMOSPHERE: <strong id="audio-state">OFF</strong></span>
+        </button>
+
+        <a href="#contact" class="nav-cta-btn">
+          <i class="fa-regular fa-paper-plane"></i> Transmission
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Floating Submersible Bathymeter HUD (Left Side) -->
+  <aside class="bathymeter-hud" id="bathymeter-hud" aria-label="Ocean Depth Meter">
+    <div class="hud-frame">
+      <div class="hud-header">
+        <span class="hud-blink-dot"></span>
+        <span class="hud-title">SONAR BATHYMETRY</span>
+      </div>
+
+      <div class="hud-metrics">
+        <div class="metric-row">
+          <span class="metric-label">ELEVATION/DEPTH</span>
+          <span class="metric-val" id="hud-depth">+18.0 m</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">STRATUM</span>
+          <span class="metric-val highlight" id="hud-stratum">17:00 SKYFALL</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">HYDRO-PRESSURE</span>
+          <span class="metric-val" id="hud-pressure">1.00 ATM</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">SOLAR LUX</span>
+          <span class="metric-val" id="hud-lux">100% GOLDEN</span>
+        </div>
+      </div>
+
+      <!-- Depth progress vertical gauge -->
+      <div class="depth-slider-container">
+        <div class="depth-track">
+          <div class="depth-bar" id="hud-depth-bar"></div>
+          <div class="depth-indicator-needle" id="hud-needle">
+            <span class="needle-label" id="hud-needle-text">17:00</span>
+          </div>
+        </div>
+        <div class="depth-milestones">
+          <span style="top: 0%">+20m</span>
+          <span style="top: 20%">0m</span>
+          <span style="top: 40%">-1km</span>
+          <span style="top: 65%">-3km</span>
+          <span style="top: 85%">-7km</span>
+          <span style="top: 100%">-11km</span>
+        </div>
+      </div>
+
+      <div class="hud-footer">
+        <span class="coords"><i class="fa-solid fa-location-dot"></i> 40.84° N, 68.66° E</span>
+        <span class="loc-name">SYRDARYA • UZ</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Floating Quick Ascent Button -->
+  <button id="quick-ascent" class="quick-ascent-btn" title="Emergency Ascent to 17:00 Sunset" aria-label="Ascend to Surface">
+    <i class="fa-solid fa-angles-up"></i>
+    <span>SURFACE ASCENT</span>
+  </button>
+
+  <!-- MAIN SCROLLABLE CONTENT (Vertical Ocean Trench) -->
+  <main class="ocean-container">
+
+    <!-- ===================================================
+         ZONE 0: 17:00 SUNFALL HERO (Sky & Horizon)
+         =================================================== -->
+    <section id="hero" class="zone zone-hero">
+      <div class="sunset-sky-layer">
+        <!-- Silhouette Clouds -->
+        <div class="clouds cloud-1"></div>
+        <div class="clouds cloud-2"></div>
+        <div class="clouds cloud-3"></div>
+
+        <!-- Flying Seagulls Silhouette -->
+        <div class="birds-container">
+          <div class="bird bird-1"></div>
+          <div class="bird bird-2"></div>
+          <div class="bird bird-3"></div>
+        </div>
+      </div>
+
+      <!-- Hero Main Content -->
+      <div class="hero-content">
+        <div class="hero-badge-row">
+          <div class="status-pill gold-pill">
+            <i class="fa-regular fa-clock"></i> 17:00 • GOLDEN HOUR
+          </div>
+          <div class="status-pill">
+            <span class="pulse-amber"></span> Rustam Bosimov Int. School
+          </div>
+          <div class="status-pill gold-accent">
+            <i class="fa-solid fa-award"></i> GPA: 5.0 / 5.0
+          </div>
+          <div class="status-pill">
+            <i class="fa-solid fa-location-crosshairs"></i> Syrdarya, Uzbekistan
+          </div>
+        </div>
+
+        <h1 class="hero-name">
+          <span class="surname">ERGASHEVA</span>
+          <span class="forename">SHOHINUR</span>
+        </h1>
+
+        <p class="hero-tagline">
+          Intellectual Tournament Architect <span class="divider">✦</span> Strategic Thinker <span class="divider">✦</span> Community Organizer
+        </p>
+
+        <p class="hero-bio">
+          Where disciplined logic meets purposeful human leadership. From championing regional intellectual games to orchestrating youth chess arenas and managing frontline commerce, I navigate complexity with clarity and drive.
+        </p>
+
+        <div class="hero-action-cluster">
+          <a href="#education" class="btn btn-primary dive-btn">
+            <i class="fa-solid fa-water"></i>
+            <span>DIVE INTO THE OCEAN DEPTHS</span>
+            <div class="sub-arrow">
+              <i class="fa-solid fa-arrow-down-long"></i>
+            </div>
+          </a>
+
+          <a href="#contact" class="btn btn-secondary">
+            <i class="fa-solid fa-compass"></i> Direct Transmission
+          </a>
+
+          <button id="btn-print-cv" class="btn btn-ghost" title="Print or Save CV">
+            <i class="fa-solid fa-file-arrow-down"></i> Curriculum Vitae
+          </button>
+        </div>
+
+        <!-- Key Vital Stats Strip -->
+        <div class="hero-stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-brain"></i></div>
+            <div class="stat-meta">
+              <span class="stat-value">Founder</span>
+              <span class="stat-desc">Zakovat Competition</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-chess-knight"></i></div>
+            <div class="stat-meta">
+              <span class="stat-value">Co-Founder</span>
+              <span class="stat-desc">Open Board Chess</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="stat-meta">
+              <span class="stat-value">Leader</span>
+              <span class="stat-desc">Student Union Volunteers</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+            <div class="stat-meta">
+              <span class="stat-value">5.0 / 5.0</span>
+              <span class="stat-desc">Academic GPA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================
+         ZONE 1: EPIPELAGIC (0m to 200m) - "The Sunlight Shallows"
+         =================================================== -->
+    <section id="education" class="zone zone-shallows">
+      <div class="zone-water-header">
+        <span class="zone-depth-tag">DEPTH: 0m — 200m // EPIPELAGIC ZONE</span>
+        <h2 class="zone-title">The Sunlight Shallows</h2>
+        <p class="zone-subtitle">Crystalline Waters & Academic Foundation</p>
+      </div>
+
+      <div class="zone-content-wrapper">
+        <div class="card-grid two-column">
+          <!-- Academic Showcase Card -->
+          <div class="glass-card education-card featured-tilt">
+            <div class="card-glow"></div>
+            <div class="card-top-tag">
+              <span class="tag-icon"><i class="fa-solid fa-graduation-cap"></i></span>
+              <span>ACADEMIC FOUNDATION</span>
+              <span class="date-badge">Expected: 25.05.2028</span>
+            </div>
+
+            <h3 class="institution-name">Rustam Bosimov International School</h3>
+            <p class="institution-loc"><i class="fa-solid fa-map-pin"></i> Syrdarya, Uzbekistan</p>
+
+            <div class="gpa-banner">
+              <div class="gpa-score">
+                <span class="number">5</span>
+                <span class="scale">/ 5</span>
+              </div>
+              <div class="gpa-label">
+                <strong>PERFECT GRADE POINT AVERAGE</strong>
+                <p>Consistently ranked at the highest percentile for rigorous academic discipline, problem formulation, and analytic rigor.</p>
+              </div>
+            </div>
+
+            <div class="academic-pillars">
+              <div class="pillar-item">
+                <i class="fa-solid fa-check-circle"></i>
+                <div>
+                  <strong>Quantitative & Data Acumen</strong>
+                  <span>Applying analytical frameworks to data interpretation and economics.</span>
+                </div>
+              </div>
+              <div class="pillar-item">
+                <i class="fa-solid fa-check-circle"></i>
+                <div>
+                  <strong>Leadership & Peer Mentorship</strong>
+                  <span>Active representative within student governance and peer-led study cohorts.</span>
+                </div>
+              </div>
+              <div class="pillar-item">
+                <i class="fa-solid fa-check-circle"></i>
+                <div>
+                  <strong>Multilingual Fluency</strong>
+                  <span>Operating seamlessly across Uzbek, Russian, and English communication contexts.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scholarly Philosophy & Intellectual Mindset -->
+          <div class="glass-card philosophy-card">
+            <div class="card-glow"></div>
+            <div class="card-top-tag">
+              <span class="tag-icon"><i class="fa-solid fa-compass"></i></span>
+              <span>SCHOLARLY PHILOSOPHY</span>
+            </div>
+
+            <h3 class="philosophy-title">Curiosity as Navigation</h3>
+            <blockquote class="styled-quote">
+              "True education is not merely absorbing knowledge—it is the capacity to synthesize diverse disciplines, orchestrate collective action, and formulate solutions when navigating uncharted waters."
+            </blockquote>
+
+            <div class="mindset-matrix">
+              <div class="mindset-node">
+                <div class="node-icon"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="node-text">
+                  <h4>Economic Curiosity</h4>
+                  <p>Keen follower of macroeconomic podcasts, fiscal dynamics, and market systems.</p>
+                </div>
+              </div>
+
+              <div class="mindset-node">
+                <div class="node-icon"><i class="fa-solid fa-book-open"></i></div>
+                <div class="node-text">
+                  <h4>Literary Immersion</h4>
+                  <p>Broad reader across classic philosophy, strategic literature, and analytical treatises.</p>
+                </div>
+              </div>
+
+              <div class="mindset-node">
+                <div class="node-icon"><i class="fa-solid fa-microchip"></i></div>
+                <div class="node-text">
+                  <h4>Data Synthesis</h4>
+                  <p>Translating abstract data matrices into intuitive presentations and strategic decisions.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ambient Swimming Fish & Sunlight Rays container -->
+      <div class="fish-school-container" id="fish-school"></div>
+    </section>
+
+    <!-- ===================================================
+         ZONE 2: MESOPELAGIC (200m to 1,000m) - "The Twilight Reef"
+         =================================================== -->
+    <section id="experience" class="zone zone-twilight">
+      <div class="zone-water-header">
+        <span class="zone-depth-tag">DEPTH: 200m — 1,000m // MESOPELAGIC ZONE</span>
+        <h2 class="zone-title">The Twilight Reef</h2>
+        <p class="zone-subtitle">Operational Mastery & Real-World Frontline Commerce</p>
+      </div>
+
+      <div class="zone-content-wrapper">
+        <div class="glass-card experience-hero-card">
+          <div class="card-glow teal-glow"></div>
+
+          <div class="exp-header-flex">
+            <div class="exp-meta-main">
+              <span class="exp-badge"><i class="fa-solid fa-store"></i> COMMERCE & LOGISTICS OPERATIONS</span>
+              <h3 class="exp-role">Sales Assistant & Operations Coordinator</h3>
+              <h4 class="exp-company"><i class="fa-solid fa-building-flag"></i> Local Grocery & General Goods Store • Syrdarya, Uzbekistan</h4>
+            </div>
+            <div class="exp-date-pill">
+              <i class="fa-regular fa-calendar-check"></i> June 2025 — Present
+            </div>
+          </div>
+
+          <p class="exp-summary">
+            Operating at the direct intersection of customer psychology, supply inventory, and daily financial reconciliation. Turning everyday commerce into a masterclass of interpersonal empathy, organizational speed, and operational resilience.
+          </p>
+
+          <div class="exp-achievements-grid">
+            <div class="achievement-box">
+              <div class="ach-icon"><i class="fa-solid fa-handshake-angle"></i></div>
+              <div class="ach-details">
+                <h5>Customer Communication & Trust</h5>
+                <p>Managed high-volume customer inquiries and personalized product consultations, fostering deep customer loyalty and conflict resolution in fast-paced retail settings.</p>
+              </div>
+            </div>
+
+            <div class="achievement-box">
+              <div class="ach-icon"><i class="fa-solid fa-cash-register"></i></div>
+              <div class="ach-details">
+                <h5>Fiscal Precision & Daily Transactions</h5>
+                <p>Executed daily financial transactions and cash handling with 100% accuracy, managing product transactions, discounts, and bookkeeping logs.</p>
+              </div>
+            </div>
+
+            <div class="achievement-box">
+              <div class="ach-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+              <div class="ach-details">
+                <h5>Visual Merchandising & Inventory Flow</h5>
+                <p>Maintained organized, high-visibility merchandise displays, monitored stock shelf-life, streamlined restocking schedules, and prevented product shortages.</p>
+              </div>
+            </div>
+
+            <div class="achievement-box">
+              <div class="ach-icon"><i class="fa-solid fa-bolt"></i></div>
+              <div class="ach-details">
+                <h5>Operational Efficiency Under Pressure</h5>
+                <p>Spearheaded peak-hour store operations with calm composure, multi-tasking between checkout queues, supplier intake, and customer support.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="skills-pill-group">
+            <span class="pill"><i class="fa-solid fa-check"></i> Practical Negotiation</span>
+            <span class="pill"><i class="fa-solid fa-check"></i> Cash Flow Accounting</span>
+            <span class="pill"><i class="fa-solid fa-check"></i> Inventory Systems</span>
+            <span class="pill"><i class="fa-solid fa-check"></i> Customer Empathy</span>
+            <span class="pill"><i class="fa-solid fa-check"></i> Active Problem Solving</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================
+         ZONE 3: BATHYPELAGIC (1,000m to 4,000m) - "The Midnight Stratum"
+         =================================================== -->
+    <section id="leadership" class="zone zone-midnight">
+      <div class="zone-water-header">
+        <span class="zone-depth-tag">DEPTH: 1,000m — 4,000m // BATHYPELAGIC REALM</span>
+        <h2 class="zone-title">The Midnight Stratum</h2>
+        <p class="zone-subtitle">Bioluminescent Arenas of Strategy, Intellectual Duels & Civic Mobilization</p>
+      </div>
+
+      <div class="zone-content-wrapper">
+        <div class="initiatives-deck">
+
+          <!-- Card 1: Zakovat Tournament -->
+          <div class="initiative-card glow-indigo">
+            <div class="card-glow"></div>
+            <div class="initiative-top">
+              <span class="role-badge founder-badge"><i class="fa-solid fa-crown"></i> FOUNDER</span>
+              <span class="date-tag"><i class="fa-regular fa-calendar"></i> 13.06.2026 — Present</span>
+            </div>
+
+            <div class="initiative-hero-icon">
+              <i class="fa-solid fa-brain"></i>
+            </div>
+
+            <h3 class="initiative-title">Zakovat Intellectual Tournament</h3>
+            <h4 class="initiative-loc"><i class="fa-solid fa-location-dot"></i> Syrdarya, Uzbekistan</h4>
+
+            <p class="initiative-desc">
+              Conceptualized, founded, and directed the premier youth intellectual quiz tournament in the region, bringing together the sharpest minds to duel in logic, erudition, and rapid deduction.
+            </p>
+
+            <ul class="initiative-highlights">
+              <li>
+                <i class="fa-solid fa-bullseye"></i>
+                <span>Architected challenging multi-round question banks spanning world history, economics, and logic puzzles.</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Coordinated participating teams, match arbitrations, automated scoring sheets, and real-time timing clocks.</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-trophy"></i>
+                <span>Mentored contestants, instilling strategic team collaboration and analytical communication under tournament pressure.</span>
+              </li>
+            </ul>
+
+            <div class="tag-row">
+              <span class="tag">Event Production</span>
+              <span class="tag">Question Design</span>
+              <span class="tag">Public Speaking</span>
+              <span class="tag">Youth Engagement</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Open Board Chess Tournament -->
+          <div class="initiative-card glow-cyan">
+            <div class="card-glow"></div>
+            <div class="initiative-top">
+              <span class="role-badge cofounder-badge"><i class="fa-solid fa-chess-knight"></i> CO-FOUNDER</span>
+              <span class="date-tag"><i class="fa-regular fa-calendar"></i> 26.06.2026 — Present</span>
+            </div>
+
+            <div class="initiative-hero-icon">
+              <i class="fa-solid fa-chess-board"></i>
+            </div>
+
+            <h3 class="initiative-title">The Open Board Chess Tournament</h3>
+            <h4 class="initiative-loc"><i class="fa-solid fa-location-dot"></i> Syrdarya, Uzbekistan</h4>
+
+            <p class="initiative-desc">
+              Co-engineered an open, competitive chess ecosystem for regional youth. Spearheaded media visibility, broadcast highlights, and digital campaign marketing that drove high participant turnout.
+            </p>
+
+            <ul class="initiative-highlights">
+              <li>
+                <i class="fa-solid fa-bullseye"></i>
+                <span>Crafted and directed social media promotional content, visual banners, and tournament highlight reels.</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Handled participant onboarding, tournament schedule pairings (Swiss & Round-Robin formats), and digital inquiries.</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-trophy"></i>
+                <span>Created an electric spectator environment, translating classic grandmaster play into engaging visual storytelling.</span>
+              </li>
+            </ul>
+
+            <div class="tag-row">
+              <span class="tag">Digital Media Strategy</span>
+              <span class="tag">Tournament Logistics</span>
+              <span class="tag">Content Marketing</span>
+              <span class="tag">Community Building</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Volunteering Society -->
+          <div class="initiative-card glow-violet">
+            <div class="card-glow"></div>
+            <div class="initiative-top">
+              <span class="role-badge leader-badge"><i class="fa-solid fa-hand-holding-heart"></i> LEADER</span>
+              <span class="date-tag"><i class="fa-regular fa-calendar"></i> 30.06.2026 — Present</span>
+            </div>
+
+            <div class="initiative-hero-icon">
+              <i class="fa-solid fa-people-group"></i>
+            </div>
+
+            <h3 class="initiative-title">Volunteering Society & Student Union</h3>
+            <h4 class="initiative-loc"><i class="fa-solid fa-location-dot"></i> Syrdarya, Uzbekistan</h4>
+
+            <p class="initiative-desc">
+              Elected as Volunteer Coordinator for the school’s Student Union. Galvanizing student energy into measurable civic impact, campus charity drives, and proactive community empowerment.
+            </p>
+
+            <ul class="initiative-highlights">
+              <li>
+                <i class="fa-solid fa-bullseye"></i>
+                <span>Led and mobilized volunteer squads across school charity events, cultural fairs, and student support programs.</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Structured task delegation matrices, ensuring each volunteer developed operational leadership and accountability.</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-trophy"></i>
+                <span>Elevated school-wide civic participation rates, fostering an active, empathetic, and united student brotherhood/sisterhood.</span>
+              </li>
+            </ul>
+
+            <div class="tag-row">
+              <span class="tag">Student Union Governance</span>
+              <span class="tag">Volunteer Mobilization</span>
+              <span class="tag">Social Impact</span>
+              <span class="tag">Team Coordination</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================
+         ZONE 4: ABYSSAL TRENCH & THE GREAT LEVIATHAN (4,000m+)
+         =================================================== -->
+    <section id="abyss" class="zone zone-abyss">
+      <div class="zone-water-header">
+        <span class="zone-depth-tag">DEPTH: 4,000m — 11,000m // HADAL ABYSSAL TRENCH</span>
+        <h2 class="zone-title">The Leviathan Deep</h2>
+        <p class="zone-subtitle">Where Colossal Ideas Roam the Abyssal Floor</p>
+      </div>
+
+      <!-- 3D Submersible Observation Bay -->
+      <div class="whale-stage" id="whale-stage">
+        <div class="whale-3d-viewport" id="whale-viewport">
+          <!-- Tactical HUD Reticle & Viewport Overlays -->
+          <div class="viewport-hud-overlay">
+            <div class="hud-corner top-left"></div>
+            <div class="hud-corner top-right"></div>
+            <div class="hud-corner bottom-left"></div>
+            <div class="hud-corner bottom-right"></div>
+
+            <div class="viewport-header-strip">
+              <div class="target-identity">
+                <span class="pulse-cyan-dot"></span>
+                <span class="target-title">TARGET: 3D LEVIATHAN // BALAENOPTERA MUSCULUS</span>
+              </div>
+              <div class="target-status">
+                <span class="status-badge"><i class="fa-solid fa-cube"></i> REAL-TIME 3D WEBGL</span>
+                <span class="status-badge live"><i class="fa-solid fa-circle-nodes"></i> DEPTH: -10,400M</span>
+              </div>
+            </div>
+
+            <!-- Central Sonar Crosshair -->
+            <div class="sonar-crosshair">
+              <div class="crosshair-ring ring-1"></div>
+              <div class="crosshair-ring ring-2"></div>
+              <div class="crosshair-line line-h"></div>
+              <div class="crosshair-line line-v"></div>
+            </div>
+
+            <!-- Interactive 3D Action Controls -->
+            <div class="viewport-controls-strip">
+              <button id="btn-focus-whale" class="hud-3d-action-btn highlight-btn" title="Center camera directly on the 3D whale">
+                <i class="fa-solid fa-crosshairs"></i> 🐋 FOCUS ON WHALE
+              </button>
+              <button id="btn-whale-spiral" class="hud-3d-action-btn" title="Whale performs 3D spiral spin">
+                <i class="fa-solid fa-arrows-spin"></i> 3D SPIRAL SPIN
+              </button>
+              <button id="btn-whale-sonar" class="hud-3d-action-btn" title="Emit 3D Sonar Pulse">
+                <i class="fa-solid fa-satellite-dish"></i> SONAR ECHOLOCATION
+              </button>
+              <button id="btn-whale-bubbles" class="hud-3d-action-btn" title="Exhale 3D Rising Bubbles">
+                <i class="fa-solid fa-circle-dot"></i> EXHALE BUBBLES
+              </button>
+              <button id="btn-whale-speed" class="hud-3d-action-btn" title="Toggle Swim Velocity">
+                <i class="fa-solid fa-gauge-high"></i> ACCELERATE
+              </button>
+            </div>
+
+            <!-- Real-time 3D Telemetry Readouts -->
+            <div class="viewport-footer-strip">
+              <div class="telemetry-item">
+                <span class="k">SPECIMEN</span>
+                <span class="v">ABYSSAL TITAN</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="k">EST. LENGTH</span>
+                <span class="v">33.5 METERS</span>
+              </div>
+              <div class="telemetry-item">
+                <span class="k">SWIM FREQUENCY</span>
+                <span class="v" id="hud-whale-cadence">0.42 HZ</span>
+              </div>
+              <div class="telemetry-item hint">
+                <i class="fa-solid fa-hand-pointer"></i> <span>Drag / Move mouse to orbit 3D camera around whale</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arsenal of Skills, Languages & Intellectual Pursuits -->
+      <div class="zone-content-wrapper abyss-content">
+        <div class="abyss-grid">
+          
+          <!-- Languages Arsenal Card -->
+          <div class="glass-card abyss-card">
+            <div class="card-glow blue-glow"></div>
+            <div class="card-top-tag">
+              <span class="tag-icon"><i class="fa-solid fa-language"></i></span>
+              <span>LINGUISTIC MATRIX</span>
+            </div>
+
+            <h3 class="abyss-card-title">Polyglot Communication</h3>
+            <p class="abyss-card-desc">Bridging diverse regional and international dialogues with linguistic confidence.</p>
+
+            <div class="language-bars">
+              <!-- Uzbek -->
+              <div class="lang-row">
+                <div class="lang-info">
+                  <span class="lang-name">Uzbek</span>
+                  <span class="lang-level native">Native Fluency</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-100"></div>
+                </div>
+                <span class="lang-note">Primary language of thought, leadership, and regional coordination.</span>
+              </div>
+
+              <!-- English -->
+              <div class="lang-row">
+                <div class="lang-info">
+                  <span class="lang-name">English</span>
+                  <span class="lang-level upper-intermediate">CEFR B2 • Upper-Intermediate</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-75"></div>
+                </div>
+                <span class="lang-note">International discourse, technical literature, and cross-border collaboration.</span>
+              </div>
+
+              <!-- Russian -->
+              <div class="lang-row">
+                <div class="lang-info">
+                  <span class="lang-name">Russian</span>
+                  <span class="lang-level intermediate">CEFR B1 • Intermediate</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill fill-60"></div>
+                </div>
+                <span class="lang-note">Operational communication, regional trade, and cultural versatility.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Technical & Strategic Competencies -->
+          <div class="glass-card abyss-card">
+            <div class="card-glow teal-glow"></div>
+            <div class="card-top-tag">
+              <span class="tag-icon"><i class="fa-solid fa-laptop-code"></i></span>
+              <span>TECHNICAL & DATA MASTERY</span>
+            </div>
+
+            <h3 class="abyss-card-title">Tools of Execution</h3>
+            <p class="abyss-card-desc">Synthesizing raw inputs into persuasive artifacts and operational structure.</p>
+
+            <div class="skills-showcase">
+              <div class="skill-tile">
+                <div class="tile-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                <div class="tile-body">
+                  <h4>Data Analysis & Interpretation</h4>
+                  <p>Uncovering patterns, auditing discrepancies, and shaping evidence-backed solutions.</p>
+                </div>
+              </div>
+
+              <div class="skill-tile">
+                <div class="tile-icon"><i class="fa-solid fa-file-powerpoint"></i></div>
+                <div class="tile-body">
+                  <h4>Microsoft PowerPoint Architecture</h4>
+                  <p>Designing high-retention visual pitch decks, infographics, and tournament reports.</p>
+                </div>
+              </div>
+
+              <div class="skill-tile">
+                <div class="tile-icon"><i class="fa-solid fa-file-lines"></i></div>
+                <div class="tile-body">
+                  <h4>Microsoft Office Suite Ecosystem</h4>
+                  <p>Advanced document design, data worksheets, administrative precision, and reporting.</p>
+                </div>
+              </div>
+
+              <div class="skill-tile">
+                <div class="tile-icon"><i class="fa-solid fa-diagram-project"></i></div>
+                <div class="tile-body">
+                  <h4>Event & Arena Coordination</h4>
+                  <p>Scheduling, rule design, multi-team logistics, and live audience management.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Intellectual Drives & Personal Curiosity -->
+          <div class="glass-card abyss-card full-span">
+            <div class="card-glow purple-glow"></div>
+            <div class="card-top-tag">
+              <span class="tag-icon"><i class="fa-solid fa-lightbulb"></i></span>
+              <span>PERSONAL INTERESTS & INTELLECTUAL PASSIONS</span>
+            </div>
+
+            <h3 class="abyss-card-title">What Fuels the Descent</h3>
+            <p class="abyss-card-desc">Beyond the resume: the intrinsic curiosity and creative pursuits that define my world.</p>
+
+            <div class="interests-grid">
+              <div class="interest-box">
+                <div class="int-icon"><i class="fa-solid fa-headphones-simple"></i></div>
+                <h4>Economic Podcasts</h4>
+                <p>Decoding macroeconomic models, global market shifts, fiscal behavior, and fiscal systems.</p>
+              </div>
+
+              <div class="interest-box">
+                <div class="int-icon"><i class="fa-solid fa-book-bookmark"></i></div>
+                <h4>Book Exploration</h4>
+                <p>Engaging deeply with literature, strategy, philosophical essays, and historical biographies.</p>
+              </div>
+
+              <div class="interest-box">
+                <div class="int-icon"><i class="fa-solid fa-music"></i></div>
+                <h4>Acoustic & Classical Music</h4>
+                <p>Immersing in music to enhance cognitive clarity, focus, and creative synthesis.</p>
+              </div>
+
+              <div class="interest-box">
+                <div class="int-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <h4>Making New Things</h4>
+                <p>Prototyping events, creating tournament formats, and bringing novel community ideas to life.</p>
+              </div>
+
+              <div class="interest-box">
+                <div class="int-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                <h4>Analyzing Real Data</h4>
+                <p>Transforming complex figures into clean, actionable insights that empower decision-makers.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================
+         ZONE 5: SONAR BEACON & FOOTER (The Ocean Trench Floor)
+         =================================================== -->
+    <footer id="contact" class="zone zone-footer">
+      <div class="trench-floor-mesh"></div>
+
+      <div class="footer-container">
+        <!-- Submarine Hydro-Terminal Contact Frame -->
+        <div class="sonar-terminal">
+          <div class="terminal-header">
+            <div class="terminal-lights">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <div class="terminal-title">
+              <i class="fa-solid fa-satellite-dish"></i> SUB-OCEANIC TRANSMISSION TERMINAL // BEACON 40.84N-68.66E
+            </div>
+            <div class="terminal-ping">
+              <span class="ping-circle"></span>
+              <span class="ping-label">ACTIVE RADAR</span>
+            </div>
+          </div>
+
+          <div class="terminal-body">
+            <div class="terminal-column info-side">
+              <h3>Connect Across the Waves</h3>
+              <p>Whether you're organizing an academic tournament, building a civic initiative, or seeking an ambitious and disciplined collaborator—my sonar is open for transmission.</p>
+
+              <div class="contact-links-list">
+                <a href="mailto:shohinurergasheva@gmail.com" class="contact-item">
+                  <div class="contact-icon"><i class="fa-solid fa-envelope"></i></div>
+                  <div class="contact-meta">
+                    <span class="label">DIRECT EMAIL</span>
+                    <span class="value">shohinurergasheva@gmail.com</span>
+                  </div>
+                </a>
+
+                <a href="tel:+998906840329" class="contact-item">
+                  <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
+                  <div class="contact-meta">
+                    <span class="label">SECURE VOICE / TELEGRAM</span>
+                    <span class="value">+99 890 684 03 29</span>
+                  </div>
+                </a>
+
+                <div class="contact-item">
+                  <div class="contact-icon"><i class="fa-solid fa-location-dot"></i></div>
+                  <div class="contact-meta">
+                    <span class="label">COORDINATES & LOCATION</span>
+                    <span class="value">Zamindor street 21 • Syrdarya, Uzbekistan</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Social / Tournament Links -->
+              <div class="terminal-social-cluster">
+                <a href="mailto:shohinurergasheva@gmail.com" class="social-chip" title="Email Shohinur">
+                  <i class="fa-solid fa-paper-plane"></i> Email
+                </a>
+                <a href="tel:+998906840329" class="social-chip" title="Call or Telegram">
+                  <i class="fa-brands fa-telegram"></i> Telegram
+                </a>
+                <button id="terminal-print-cv" class="social-chip print-btn" title="Download or Print CV">
+                  <i class="fa-solid fa-print"></i> Print Official Resume
+                </button>
+              </div>
+            </div>
+
+            <!-- Transmission Form -->
+            <div class="terminal-column form-side">
+              <form id="transmission-form" class="transmission-form" onsubmit="event.preventDefault(); window.handleTransmissionSubmit(event);">
+                <div class="form-group">
+                  <label for="sender-name"><i class="fa-regular fa-user"></i> CALLSIGN / YOUR NAME</label>
+                  <input type="text" id="sender-name" name="name" placeholder="e.g. Commander Arthur or your name" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="sender-email"><i class="fa-regular fa-envelope"></i> FREQUENCY / YOUR EMAIL</label>
+                  <input type="email" id="sender-email" name="email" placeholder="name@domain.com" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="sender-message"><i class="fa-regular fa-comment-dots"></i> TRANSMISSION LOG / MESSAGE</label>
+                  <textarea id="sender-message" name="message" rows="4" placeholder="Draft your message, collaboration proposal, or tournament invitation..." required></textarea>
+                </div>
+
+                <button type="submit" id="transmit-btn" class="transmit-button">
+                  <i class="fa-solid fa-broadcast-tower"></i> BROADCAST TRANSMISSION
+                </button>
+
+                <div id="transmission-status" class="transmission-status"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Colophon & Abyss Signoff -->
+        <div class="footer-colophon">
+          <div class="colophon-left">
+            <span class="colophon-brand">ERGASHEVA SHOHINUR</span>
+            <span class="colophon-copy">© 2026. Designed with Sunfall Golden Skies & Abyssal Leviathan Depths.</span>
+          </div>
+
+          <div class="colophon-right">
+            <span class="badge-depth-final"><i class="fa-solid fa-anchor"></i> DEPTH RECORD: -10,928 METERS REACHED</span>
+            <a href="#hero" class="return-top-link">
+              <i class="fa-solid fa-arrow-up"></i> RETURN TO 17:00 SUNSET
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- Printable Resume Modal / Container -->
+  <div id="cv-modal" class="modal-backdrop">
+    <div class="cv-modal-content">
+      <div class="cv-modal-header">
+        <h2>Official Curriculum Vitae</h2>
+        <div class="modal-controls">
+          <button id="modal-do-print" class="modal-btn-print"><i class="fa-solid fa-print"></i> Print</button>
+          <button id="modal-close" class="modal-btn-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="cv-paper" id="cv-printable-area">
+        <header class="cv-header">
+          <h1 class="cv-name">Ergasheva Shohinur</h1>
+          <p class="cv-contact">Zamindor street 21 • Syrdarya, Uzbekistan • shohinurergasheva@gmail.com • +99 890 684 03 29</p>
+        </header>
+
+        <section class="cv-section">
+          <h2 class="cv-heading">Education</h2>
+          <div class="cv-item">
+            <div class="cv-item-title-row">
+              <span class="cv-bold">Rustam Bosimov International school</span>
+              <span>Syrdarya, Uzbekistan</span>
+            </div>
+            <div class="cv-item-sub-row">
+              <span>GPA: 5|5</span>
+              <span>25.05.2028</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="cv-section">
+          <h2 class="cv-heading">Experience</h2>
+          <div class="cv-item">
+            <div class="cv-item-title-row">
+              <span class="cv-bold">Local Grocery Store</span>
+              <span>Syrdarya, Uzbekistan</span>
+            </div>
+            <div class="cv-item-sub-row">
+              <span class="cv-italic">Sales Assistant</span>
+              <span>June 2025 – Unknown</span>
+            </div>
+            <ul class="cv-list">
+              <li>Assisted customers, organized merchandise, and handled daily sales in a local grocery and general goods store.</li>
+              <li>Managed customer communication and product transactions, strengthening practical sales and communication skills.</li>
+              <li>Managed daily store operations, supported customers, and maintained organized product displays to ensure efficient service.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="cv-section">
+          <h2 class="cv-heading">Leadership & Activities</h2>
+          <div class="cv-item">
+            <div class="cv-item-title-row">
+              <span class="cv-bold">Zakovat Tournament</span>
+              <span>Syrdarya, Uzbekistan</span>
+            </div>
+            <div class="cv-item-sub-row">
+              <span class="cv-italic">Founder</span>
+              <span>13.06.2026 – Unknown</span>
+            </div>
+            <ul class="cv-list">
+              <li>Organized and led the Zakovat Intellectual Competition, coordinating participants and ensuring successful event execution.</li>
+              <li>Planned and coordinated the Zakovat Intellectual Competition, developing leadership, teamwork, and organizational skills.</li>
+              <li>Led the Zakovat Intellectual Competition, managing participants and ensuring smooth event coordination.</li>
+            </ul>
+          </div>
+
+          <div class="cv-item">
+            <div class="cv-item-title-row">
+              <span class="cv-bold">The Open Board Chess Tournament</span>
+              <span>Syrdarya, Uzbekistan</span>
+            </div>
+            <div class="cv-item-sub-row">
+              <span class="cv-italic">Co-Founder</span>
+              <span>26.06.2026 – Unknown</span>
+            </div>
+            <ul class="cv-list">
+              <li>Managed social media content and promotional materials to increase event visibility and audience engagement.</li>
+              <li>Created and coordinated media content, including event announcements and tournament highlights.</li>
+              <li>Handled event promotion and digital communication to attract participants and engage the audience.</li>
+            </ul>
+          </div>
+
+          <div class="cv-item">
+            <div class="cv-item-title-row">
+              <span class="cv-bold">Volunteering society</span>
+              <span>Syrdarya, Uzbekistan</span>
+            </div>
+            <div class="cv-item-sub-row">
+              <span class="cv-italic">Leader</span>
+              <span>30.06.2026 – Unknown</span>
+            </div>
+            <ul class="cv-list">
+              <li>Elected as a Volunteer Coordinator for the school's Student Union, leading and supporting student volunteers.</li>
+              <li>Organized volunteer teams and delegated tasks to support the successful implementation of Student Union projects.</li>
+              <li>Encouraged student participation in school activities and helped create a more active and collaborative student community.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="cv-section">
+          <h2 class="cv-heading">Skills & Interests</h2>
+          <p><span class="cv-bold">Technical:</span> Microsoft Office, Microsoft Power Point</p>
+          <p><span class="cv-bold">Language:</span> Uzbek (Native), Russian (B1), English (B2)</p>
+          <p><span class="cv-bold">Interests:</span> reading books, watching podcasts about economics, listening to music, making new things, analyze data.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>
